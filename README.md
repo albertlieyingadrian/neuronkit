@@ -33,6 +33,25 @@ lines:
 | `gate_open(model, ids, neurons)` | Is a sign "real" here (gate open), or SiLU's small negative dip? |
 | `neuron_monitor(X, y, neurons)` | A sparse (L1) detector whose features are individual neurons, so each one can be described, traced and ablated |
 
+## What it found (small-scale replication)
+
+Run with neuronkit on Qwen3.6-35B-A3B, OLMoE-1B-7B, Qwen2.5-0.5B and a password-locked Qwen2.5-1.5B
+([full note](https://albertlieyingadrian.github.io/steerlab/experiments/neurons-basis/report/)):
+
+- **Sparsity replicates on the original model.** Keeping each token's strongest 320 of 4,096 routed neuron firings
+  (92% removed) changes Qwen3.6-35B-A3B's ARC-C / ARC-E / WinoGrande / HellaSwag / MMLU by +2.0 / +0.4 / −1.2 / −2.0 /
+  −2.3 points (the original study: +0.3 / +0.2 / −2.2 / −1.6 / −1.2). OLMoE loses several times more under the same rule;
+  a dense 0.5B model breaks.
+
+  ![Original model replication](docs/images/original_model.png)
+- **Keeping each token's strongest firings beats keeping each neuron's own tails** (`keep_topk` vs `ablate_band`).
+
+  ![Sparsity curves](docs/images/sparsity.png)
+- **A neuron-basis sandbagging monitor ignores the password but reads the instruction, and its neurons are readouts**
+  (patching them changes no answer; patching a whole later layer recovers half the lost accuracy).
+
+  ![Monitors on the instruction x behaviour 2x2](docs/images/monitors.png)
+
 ## Install
 
 ```bash
