@@ -45,8 +45,11 @@ def cluster_subcircuits(
     for i, p in enumerate(profiles):
         for k, v in p.items():
             X[i, col[k]] = v
+    raw = X.copy()
     df = (X != 0).sum(0)
     X = X * np.log(n / np.maximum(df, 1))
+    zero = np.linalg.norm(X, axis=1) == 0  # every driver appears in every firing: keep the unweighted profile
+    X[zero] = raw[zero]
     X = X / np.maximum(np.linalg.norm(X, axis=1, keepdims=True), 1e-12)
     best, best_s = [0] * n, -1.0
     for k in range(2, min(max_k, n - 1) + 1):

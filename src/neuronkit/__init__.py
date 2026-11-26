@@ -12,6 +12,7 @@ from neuronkit.percentiles import (
     percentiles,
     topk_fn,
 )
+from neuronkit.readout import Readout, concept_neurons, gate_open, output_vector, readout, write_cosine
 from neuronkit.sparsity import CurvePoint, site_condition, sparsity_curve
 from neuronkit.subcircuit import Contribution, Reader, SourceToken, Subcircuit, Trace, subcircuit, trace
 
@@ -28,6 +29,7 @@ __all__ = [
     "Percentiles",
     "Pole",
     "Reader",
+    "Readout",
     "Site",
     "SourceToken",
     "Subcircuit",
@@ -36,15 +38,19 @@ __all__ = [
     "ablate_band",
     "band_fn",
     "batches",
+    "concept_neurons",
     "capture",
     "edit",
     "firings_above",
+    "gate_open",
     "hook_sites",
     "keep_topk",
     "neuron_edit",
+    "output_vector",
     "parse_keep",
     "percentiles",
     "random_windows",
+    "readout",
     "run_capture",
     "site_condition",
     "sites",
@@ -54,4 +60,5 @@ __all__ = [
     "top_firings",
     "topk_fn",
     "trace",
+    "write_cosine",
 ]

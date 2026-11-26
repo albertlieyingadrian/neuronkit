@@ -66,6 +66,13 @@ DESCRIBE_SYSTEM = (
     'modes, name each briefly. Answer with JSON only: {"description": "..."}'
 )
 
+PREDICT_SYSTEM = (
+    "You test a description of one neuron of a language model. Given the description and numbered excerpts of text, "
+    "estimate for each excerpt the probability that the neuron fires strongly on at least one of its tokens. About "
+    "half the excerpts contain such a firing. Answer with JSON only, one entry per excerpt number: "
+    '{"probs": {"1": p1, "2": p2, ...}}, each p from 0 to 1.'
+)
+
 WRITE_SYSTEM = (
     "You write text to make one neuron of a language model fire as strongly as possible. Given the neuron's "
     "description, write {n} different short texts (each under 60 words) that you expect to contain its strongest "
@@ -92,24 +99,32 @@ def parse_description(text: str) -> str:
 def predict_prompt(
     description: str, positives: Sequence[Excerpt], negatives: Sequence[Excerpt], seed: int = 0
 ) -> tuple[str, str, list[int]]:
-    """circuitcheck's detection prompt over a shuffled mix; returns (system, prompt, truth in prompt order)."""
+    """A detection prompt over a shuffled mix (circuitcheck's excerpt format; replies keyed by excerpt number, which
+    survives a judge that miscounts a long list). Returns (system, prompt, truth in prompt order)."""
     cc = _cc()
     items = [(e, 1) for e in positives] + [(e, 0) for e in negatives]
     random.Random(seed).shuffle(items)
     body = "\n".join(f"{i + 1}. {cc.format_record(e.to_record(1), marks=False)}" for i, (e, _) in enumerate(items))
-    prompt = f"Label: {description}\n\nThere are exactly {len(items)} excerpts.\n\nExcerpts:\n{body}{JSON_ONLY}"
-    return cc.DETECT_SYSTEM, prompt, [y for _, y in items]
+    prompt = f"Description: {description}\n\nThere are exactly {len(items)} excerpts.\n\nExcerpts:\n{body}{JSON_ONLY}"
+    return PREDICT_SYSTEM, prompt, [y for _, y in items]
 
 
 def parse_probs(text: str, n: int) -> list[float] | None:
+    """Probabilities for excerpts 1..n, from {"probs": {"1": p, ...}} or {"probs": [p, ...]}; None if any is missing."""
     try:
         raw = parse_json(text).get("probs", [])
     except ValueError:
         return None
-    if not isinstance(raw, list) or len(raw) != n:
-        return None
     try:
-        return [min(1.0, max(0.0, float(p))) for p in raw]
+        if isinstance(raw, dict):
+            vals = [raw.get(str(i + 1), raw.get(i + 1)) for i in range(n)]
+            if any(v is None for v in vals):
+                return None
+        elif isinstance(raw, list) and len(raw) == n:
+            vals = raw
+        else:
+            return None
+        return [min(1.0, max(0.0, float(p))) for p in vals]
     except (TypeError, ValueError):
         return None
 

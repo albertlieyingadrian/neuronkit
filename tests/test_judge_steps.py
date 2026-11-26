@@ -18,7 +18,7 @@ pytest.importorskip("circuitcheck")
 def _judge(system: str, prompt: str) -> str:
     if system == D.DESCRIBE_SYSTEM:
         return '```json\n{"description": "fires on the letter e"}\n```'
-    if "probability" in system:
+    if system == D.PREDICT_SYSTEM:
         n = int(prompt.split("There are exactly ")[1].split()[0])
         return json.dumps({"probs": [0.9 if i % 2 else 0.1 for i in range(n)]})
     if "simulate" in system:
@@ -36,6 +36,8 @@ def test_parsers():
     assert D.parse_description("no json here") == "no json here"
     assert D.parse_probs('{"probs": [0.2, 1.5]}', 2) == [0.2, 1.0]
     assert D.parse_probs('{"probs": [0.2]}', 2) is None
+    assert D.parse_probs('{"probs": {"1": 0.3, "2": 0.9, "3": 0.1}}', 2) == [0.3, 0.9]
+    assert D.parse_probs('{"probs": {"1": 0.3}}', 2) is None
     assert D.parse_levels('{"acts": [1, 20]}', 3) == [1.0, 10.0, 0.0]
     assert D.parse_texts('{"texts": ["a", "", 3]}') == ["a"]
     assert D.balanced_accuracy([0.9, 0.1], [1, 0]) == 1.0
