@@ -4,11 +4,19 @@
 
 **MLP neurons as an interpretable basis, for Hugging Face models, with plain PyTorch hooks.**
 
-A transformer's MLP neurons (the scalar `act(gate·x) × (up·x)` that enters `down_proj`) can be read one at a time:
-each has its own activation distribution, a few strong firings in its tails, and a small local circuit that drives
-it. neuronkit packages the measurements from
-[Neurons as an Interpretable Basis](https://www.goodfire.com/research/neurons-as-an-interpretable-basis) so they run
-on any dense or mixture-of-experts SwiGLU model in a few lines:
+A transformer's MLP neurons (the scalar `act(gate·x) × (up·x)` that enters `down_proj`) can be read one at a time,
+from both sides:
+
+- **Input side: when does it fire, and why?** Each neuron has its own activation distribution, a few strong firings
+  in its tails, and a small local circuit that drives it
+  ([Neurons as an Interpretable Basis](https://www.goodfire.com/research/neurons-as-an-interpretable-basis)).
+- **Output side: what does it write?** Each sign of a neuron adds a fixed vector (its down-projection column) to the
+  residual stream when its gate is open, and a lens reads that vector as tokens
+  ([Returning to the Neuron Basis for Interpretability](https://alignment.anthropic.com/2026/neuron-basis-theory/),
+  [Part 2: safety applications](https://alignment.anthropic.com/2026/neuron-basis-applications/)).
+
+neuronkit packages both sets of measurements so they run on any dense or mixture-of-experts SwiGLU model in a few
+lines:
 
 | Function | Question it answers |
 |---|---|
@@ -20,6 +28,9 @@ on any dense or mixture-of-experts SwiGLU model in a few lines:
 | `subcircuit(model, neuron, example)` | For one firing: which heads, neurons and source tokens drove it, and what its write changes downstream |
 | `modes.cluster_subcircuits` + `modes_prompt` + `mode_shares` | Does the neuron do one thing or several? Which share of its ablation damage does each mode carry? |
 | `describe.score_description(...)` | Does a description hold up? Predict firing vs random text, simulate activations and recover ablation damage, write text that fires it |
+| `readout(model, tok, neuron, sign, lens="logit" \| "jacobian")` | What does each sign of the neuron write, read as tokens? |
+| `concept_neurons(model, tok, layers, words)` + `write_cosine` | Which neurons write a concept, picked with no labels, and how strongly is it in the residual stream? |
+| `gate_open(model, ids, neurons)` | Is a sign "real" here (gate open), or SiLU's small negative dip? |
 | `neuron_monitor(X, y, neurons)` | A sparse (L1) detector whose features are individual neurons, so each one can be described, traced and ablated |
 
 ## Install

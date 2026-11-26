@@ -109,7 +109,16 @@ def down_module(mlp: nn.Module) -> nn.Module:
 
 
 def decoder_layers(model: nn.Module) -> nn.ModuleList:
-    for path in ("model.layers", "model.model.layers", "transformer.h", "gpt_neox.layers", "model.decoder.layers"):
+    for path in (
+        "model.layers",
+        "model.model.layers",
+        "model.language_model.layers",  # multimodal wrappers (e.g. Qwen3.5/3.6 MoE ...ForConditionalGeneration)
+        "model.model.language_model.layers",
+        "language_model.model.layers",
+        "transformer.h",
+        "gpt_neox.layers",
+        "model.decoder.layers",
+    ):
         obj: Any = model
         for part in path.split("."):
             obj = getattr(obj, part, None)

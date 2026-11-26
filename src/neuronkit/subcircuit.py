@@ -515,7 +515,14 @@ class Trace:
 
 
 def _final_norm(model: nn.Module) -> nn.Module:
-    for path in ("model.norm", "model.model.norm", "transformer.ln_f", "model.final_layernorm"):
+    for path in (
+        "model.norm",
+        "model.model.norm",
+        "model.language_model.norm",
+        "model.model.language_model.norm",
+        "transformer.ln_f",
+        "model.final_layernorm",
+    ):
         obj = model
         for part in path.split("."):
             obj = getattr(obj, part, None)
