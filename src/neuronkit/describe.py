@@ -188,12 +188,10 @@ class WindowKL:
 
 
 def _window_logp(model, ids, mask, edit_fn=None):
-    with torch.no_grad():
-        if edit_fn is None:
-            lg = model(input_ids=ids, use_cache=False).logits
-        else:
-            with edit(model, edit_fn):
-                lg = model(input_ids=ids, use_cache=False).logits
+    # the base pass goes through the same hooks with no edit: for MoE models neuronkit re-implements the expert
+    # forward, and in bf16 that alone moves the logits about as much as ablating one neuron
+    with torch.no_grad(), edit(model) if edit_fn is None else edit(model, edit_fn):
+        lg = model(input_ids=ids, use_cache=False).logits
     return torch.log_softmax(lg.float()[0][mask[0]], -1)
 
 

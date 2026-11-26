@@ -63,11 +63,14 @@ def sparsity_curve(
 
     `conditions` maps a name to a function `model -> context manager`, for example
     `{"top-7.8%": lambda m: neuronkit.keep_topk(m, frac=0.078), "p97/3": lambda m: neuronkit.ablate_band(m, pct)}`.
-    Returns name -> CurvePoint with per-document loss and KL(base || condition); "base" has KL 0.
+    Returns name -> CurvePoint with per-document loss and KL(base || condition); "base" has KL 0. The base pass runs
+    through neuronkit's hooks with no edit, so KL measures the edit and not a numerical difference between code paths
+    (it matters for MoE models in bf16).
     """
     points = {"base": CurvePoint("base")} | {name: CurvePoint(name) for name in conditions}
     for batch in batch_iter:
-        out = forward(model, batch)
+        with hook_sites(model, lambda a, c: None):  # same code path as the edits (see describe._window_logp)
+            out = forward(model, batch)
         loss, _, base_logp, n = _token_stats(out.logits, batch, None)
         points["base"].loss += loss.tolist()
         points["base"].kl += [0.0] * len(loss)

@@ -161,3 +161,18 @@ def test_top_examples(dense_model, tok, texts):
     assert peaks == sorted(peaks, reverse=True)
     neg = nk.top_examples(dense_model, tok, texts, nk.Neuron(1, 2), k=3, sign=-1)
     assert all(e.acts[e.focus] < 0 for e in neg)
+
+
+def test_base_and_edit_share_one_code_path_in_bf16(moe_model, tok, texts):
+    """In bf16 the re-implemented MoE forward differs slightly from the native one, so a base pass must use the same
+    hooked path as the edits: an edit that changes nothing must then give exactly the base logits."""
+    import copy
+
+    m = copy.deepcopy(moe_model).to(torch.bfloat16)
+    ids = torch.tensor([tok(texts[0])["input_ids"]])
+    with torch.no_grad():
+        with nk.edit(m):
+            base = m(ids).logits
+        with nk.edit(m, nk.neuron_edit({nk.Neuron(1, 3): (lambda c: c)})):
+            same = m(ids).logits
+    assert torch.equal(base, same)
